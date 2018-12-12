@@ -1,0 +1,30 @@
+{
+  "name": "gatsby-source-dropbox-paper",
+  "version": "0.0.1",
+  "description": "A source plugin for Gatsby that pulls data from the Dropbox Paper API.",
+  "main": "gatsby-node.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/alexmacarthur/gatsby-source-dropbox-paper.git"
+  },
+  "keywords": [
+    "gatsby",
+    "cms",
+    "dropbox",
+    "paper",
+    "dropbox",
+    "jamstack"
+  ],
+  "author": "Alex MacArthur <alex@macarthur.me> (https://macarthur.me)",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/alexmacarthur/gatsby-source-dropbox-paper/issues"
+  },
+  "homepage": "https://github.com/alexmacarthur/gatsby-source-dropbox-paper#readme",
+  "dependencies": {
+    "axios": "^0.18.0"
+  }
+}
