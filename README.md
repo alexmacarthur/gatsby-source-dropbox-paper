@@ -40,7 +40,7 @@ plugins: [
 ```
 
 ### Querying for Data
-You can use the following GraphQL parameters to pull specific data into your pages. This plugin purely deals with pulling the data -- not parsing any of it for display. For example, if your documents are written in Markdown, you'll need to convert it to HTML yourself after pulling.
+You can use the following GraphQL fields to pull raw data into your pages. 
 
 ```graphql
 {
@@ -65,6 +65,31 @@ You can use the following GraphQL parameters to pull specific data into your pag
                     contentDigest, 
                     owner
                 }
+            }
+        }
+    }
+}
+```
+
+#### Get Transformed Markdown
+Using the [gatsby-transformer-remark](https://www.gatsbyjs.org/packages/gatsby-transformer-remark/) plugin, you can access pulled Markdown transformed into HTML. Simply use the `childMarkdownRemark` field when querying for data. 
+
+```graphql
+{
+    allDropboxPaperDocument(limit: 10) {
+        edges {
+            node {
+              	childMarkdownRemark {
+                    id,
+                    html, 
+                    excerpt, 
+                    timeToRead, 
+                    wordCount {
+                        paragraphs
+                        sentences
+                        words
+                    }
+              	}
             }
         }
     }
