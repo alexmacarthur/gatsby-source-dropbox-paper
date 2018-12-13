@@ -30,6 +30,7 @@ exports.sourceNodes = async ({
             children: [],
             internal: {
                 type: `DropboxPaperDocument`,
+                mediaType: 'text/markdown',
                 content: content,
                 contentDigest: createContentDigest(content),
             }
