@@ -1,6 +1,6 @@
 {
   "name": "gatsby-source-dropbox-paper",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "A source plugin for Gatsby that pulls data from the Dropbox Paper API.",
   "main": "gatsby-node.js",
   "scripts": {
