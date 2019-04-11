@@ -10,10 +10,37 @@ module.exports = class {
     }
 
     /**
+   * Recursively appends docIds via pagination
+   */
+    async recurseThroughPagination(cursor, docIds) {
+        let response;
+        try {
+            response = await axios.post(
+                "https://api.dropboxapi.com/2/paper/docs/list/continue",
+                {
+                    cursor: cursor
+                },
+                {
+                    headers: this.baseHeaders
+                }
+            );
+        } catch (e) {
+            console.error(e);
+            return docIds;
+        } finally {
+            Array.prototype.push.apply(docIds, response.data.doc_ids);
+            if (response.data.has_more) {
+                await this.recurseThroughPagination(response.data.cursor.value, docIds);
+            }
+        }
+    }
+
+    /**
      * Return all document IDs.
      */
     async getAll() {
         let response;
+        let docIds = [];
 
         try {
             response = await axios.post("https://api.dropboxapi.com/2/paper/docs/list", {}, {
@@ -21,9 +48,13 @@ module.exports = class {
             });
         } catch (e) {
             console.error(e);
-            return [];
+            return docIds;
         } finally {
-            return response.data.doc_ids;
+            Array.prototype.push.apply(docIds, response.data.doc_ids);
+            if (response.data.has_more) {
+                await this.recurseThroughPagination(response.data.cursor.value, docIds);
+            }
+            return docIds;
         }
     }
 
