@@ -1,38 +1,50 @@
 const axios = require("axios");
 
-module.exports = class {
+let getDocIds = async (response, docIds, headers) => {
+    Array.prototype.push.apply(docIds, response.data.doc_ids);
+    if (response.data.has_more) {
+        docIds = await recurseThroughPagination(
+            response.data.cursor.value,
+            docIds,
+            headers
+        );
+    }
+    return docIds;
+};
 
+let post = async (requestUri, requestArgs, headers, fallbackResponse) => {
+    let res;
+    try {
+        res = await axios.post(requestUri, requestArgs, {
+            headers: headers
+        });
+    } catch (e) {
+        console.error(e);
+        return fallbackResponse;
+    }
+    return res;
+};
+
+let recurseThroughPagination = async (cursor, docIds, headers) => {
+    let response;
+    response = await post(
+        "https://api.dropboxapi.com/2/paper/docs/list/continue",
+        { cursor: cursor },
+        headers,
+        { data: { doc_ids: docIds }, has_more: false }
+    );
+
+    docIds = await getDocIds(response, docIds, headers);
+
+    return docIds;
+};
+
+module.exports = class {
     constructor(accessToken) {
         this.baseHeaders = {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${accessToken}`
+            Authorization: `Bearer ${accessToken}`
         };
-    }
-
-    /**
-   * Recursively appends docIds via pagination
-   */
-    async recurseThroughPagination(cursor, docIds) {
-        let response;
-        try {
-            response = await axios.post(
-                "https://api.dropboxapi.com/2/paper/docs/list/continue",
-                {
-                    cursor: cursor
-                },
-                {
-                    headers: this.baseHeaders
-                }
-            );
-        } catch (e) {
-            console.error(e);
-            return docIds;
-        } finally {
-            Array.prototype.push.apply(docIds, response.data.doc_ids);
-            if (response.data.has_more) {
-                await this.recurseThroughPagination(response.data.cursor.value, docIds);
-            }
-        }
     }
 
     /**
@@ -42,41 +54,35 @@ module.exports = class {
         let response;
         let docIds = [];
 
-        try {
-            response = await axios.post("https://api.dropboxapi.com/2/paper/docs/list", {}, {
-                headers: this.baseHeaders
-            });
-        } catch (e) {
-            console.error(e);
-            return docIds;
-        } finally {
-            Array.prototype.push.apply(docIds, response.data.doc_ids);
-            if (response.data.has_more) {
-                await this.recurseThroughPagination(response.data.cursor.value, docIds);
-            }
-            return docIds;
-        }
+        response = await post(
+            "https://api.dropboxapi.com/2/paper/docs/list",
+            {},
+            this.baseHeaders,
+            { data: { doc_ids: docIds }, has_more: false }
+        );
+
+        docIds = await getDocIds(response, docIds, this.baseHeaders);
+
+        return docIds;
     }
 
     /**
      * Get the content (in markdown or HTML) for a given document.
      */
-    async getContent(docID, format = 'markdown') {
-        let data;
+    async getContent(docID, format = "markdown") {
+        let content;
 
-        try {
-            data = await axios.post("https://api.dropboxapi.com/2/paper/docs/download", null, {
-                headers: Object.assign({}, this.baseHeaders, {
-                    "Content-Type": "text/plain",
-                    "Dropbox-API-Arg": `{ "doc_id": "${docID}", "export_format": { ".tag": "${format}" } }`
-                })
-            });
-        } catch (e) {
-            console.error(e);
-            return '';
-        } finally {
-            return data.data;
-        }
+        content = await post(
+            "https://api.dropboxapi.com/2/paper/docs/download",
+            null,
+            Object.assign({}, this.baseHeaders, {
+                "Content-Type": "text/plain",
+                "Dropbox-API-Arg": `{ "doc_id": "${docID}", "export_format": { ".tag": "${format}" } }`
+            }),
+            { data: "" }
+        );
+
+        return content.data;
     }
 
     /**
@@ -85,17 +91,13 @@ module.exports = class {
     async getMeta(docID) {
         let meta;
 
-        try {
-            meta = await axios.post("https://api.dropboxapi.com/2/paper/docs/get_metadata", {
-                doc_id: docID
-            }, {
-                headers: this.baseHeaders
-            });
-        } catch (e) {
-            console.error(e);
-            return {};
-        } finally {
-            return meta.data;
-        }
+        meta = await post(
+            "https://api.dropboxapi.com/2/paper/docs/get_metadata",
+            { doc_id: docID },
+            this.baseHeaders,
+            { data: "" }
+        );
+
+        return meta.data;
     }
-}
+};
