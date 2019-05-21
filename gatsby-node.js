@@ -11,8 +11,8 @@ exports.sourceNodes = async ({
         createNode
     } = actions;
     delete configOptions.plugins;
-
-    const documentManager = new DocumentManager(configOptions.access_token);
+    const format = configOptions.format ? configOptions.format : "markdown"
+    const documentManager = new DocumentManager(configOptions.access_token, format);
 
     console.log("\nPulling data from Dropbox Paper...\n")
 

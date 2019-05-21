@@ -69,7 +69,7 @@ module.exports = class {
     /**
      * Get the content (in markdown or HTML) for a given document.
      */
-    async getContent(docID, format = "markdown") {
+    async getContent(docID) {
         let content;
 
         content = await post(
@@ -77,7 +77,7 @@ module.exports = class {
             null,
             Object.assign({}, this.baseHeaders, {
                 "Content-Type": "text/plain",
-                "Dropbox-API-Arg": `{ "doc_id": "${docID}", "export_format": { ".tag": "${format}" } }`
+                "Dropbox-API-Arg": `{ "doc_id": "${docID}", "export_format": { ".tag": "${this.format}" } }`
             }),
             { data: "" }
         );
