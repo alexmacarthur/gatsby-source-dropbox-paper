@@ -40,7 +40,8 @@ let recurseThroughPagination = async (cursor, docIds, headers) => {
 };
 
 module.exports = class {
-    constructor(accessToken) {
+    constructor(accessToken, format) {
+        this.format = format;
         this.baseHeaders = {
             "Content-Type": "application/json",
             Authorization: `Bearer ${accessToken}`
