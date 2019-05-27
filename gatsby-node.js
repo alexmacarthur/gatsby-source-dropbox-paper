@@ -3,7 +3,6 @@ const DocumentManager = require("./DocumentManager");
 exports.sourceNodes = async ({
         actions,
         cache,
-        createNodeId,
         createContentDigest
     },
     configOptions
@@ -27,7 +26,6 @@ exports.sourceNodes = async ({
         //touchNode prevents the gatsby cache from garbage collecting the nodes; we don't need to
         //fetch the content because nothing is stale.
         if (cachedPaperNode && cachedPaperNode.last_updated_date === meta.last_updated_date) {
-            
             touchNode({ nodeId: cachedPaperNode.nodeId });
 
         } else {
@@ -53,7 +51,8 @@ exports.sourceNodes = async ({
             //use the id from dropbox to set a deterministically referenceable position in the cache
             await cache.set(postCacheKey, {
                 nodeId: id,
-                last_updated_date: meta.last_updated_date
+                last_updated_date: meta.last_updated_date,
+                contentUpdated: true //provide flag for any other cached consumers of this data
               });
         }
     }
