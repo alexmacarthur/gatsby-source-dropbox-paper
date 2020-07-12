@@ -1,51 +1,85 @@
 const axios = require('axios')
 
-let getDocIds = async (response, docIds, headers) => {
-  Array.prototype.push.apply(docIds, response.data.doc_ids)
-  if (response.data.has_more) {
-    docIds = await recurseThroughPagination(
-      response.data.cursor.value,
-      docIds,
-      headers
-    )
+class HttpPoster {
+  constructor(maxRetryCount, retryDelayMs, shouldRetry) {
+    this.maxRetryCount = maxRetryCount
+    this.retryDelayMs = retryDelayMs
+    this.shouldRetry = shouldRetry
   }
-  return docIds
-}
 
-let post = async (requestUri, requestArgs, headers, fallbackResponse) => {
-  let res
-  try {
-    res = await axios.post(requestUri, requestArgs, {
-      headers: headers,
-    })
-  } catch (e) {
-    console.error(e)
-    return fallbackResponse
+  async post(requestUri, requestArgs, headers, fallbackResponse) {
+    let res
+    const axiosPromise = () => axios.post(requestUri, requestArgs, { headers })
+
+    if (this.shouldRetry) {
+      let retryCount = 0
+      const promisedData = () =>
+        new Promise(resolve => {
+          setTimeout(async () => {
+            try {
+              const data = await axiosPromise()
+              resolve(data)
+            } catch (e) {
+              if (retryCount < this.maxRetryCount) {
+                retryCount++
+                resolve(promisedData())
+              } else {
+                console.error(e)
+                resolve(fallbackResponse)
+              }
+            }
+          }, this.retryDelayMs)
+        }).then(result => (res = result))
+      await promisedData()
+    } else {
+      try {
+        res = await axiosPromise()
+      } catch (e) {
+        console.error(e)
+        res = fallbackResponse
+      }
+    }
+
+    return res
   }
-  return res
-}
-
-let recurseThroughPagination = async (cursor, docIds, headers) => {
-  let response
-  response = await post(
-    'https://api.dropboxapi.com/2/paper/docs/list/continue',
-    { cursor: cursor },
-    headers,
-    { data: { doc_ids: docIds }, has_more: false }
-  )
-
-  docIds = await getDocIds(response, docIds, headers)
-
-  return docIds
 }
 
 module.exports = class {
-  constructor(accessToken, format) {
+  constructor(
+    accessToken,
+    format,
+    { maxRetryCount, retryDelayMs, shouldRetry }
+  ) {
     this.format = format
     this.baseHeaders = {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${accessToken}`,
     }
+    this.httpPoster = new HttpPoster(maxRetryCount, retryDelayMs, shouldRetry)
+  }
+
+  async _getDocIds(response, docIds, headers) {
+    Array.prototype.push.apply(docIds, response.data.doc_ids)
+    if (response.data.has_more) {
+      docIds = await this._recurseThroughPagination(
+        response.data.cursor.value,
+        docIds,
+        headers
+      )
+    }
+    return docIds
+  }
+
+  async _recurseThroughPagination(cursor, docIds, headers) {
+    const response = await this.httpPoster.post(
+      'https://api.dropboxapi.com/2/paper/docs/list/continue',
+      { cursor: cursor },
+      headers,
+      { data: { doc_ids: docIds }, has_more: false }
+    )
+
+    docIds = await this._getDocIds(response, docIds, headers)
+    return docIds
   }
 
   /**
@@ -55,14 +89,14 @@ module.exports = class {
     let response
     let docIds = []
 
-    response = await post(
+    response = await this.httpPoster.post(
       'https://api.dropboxapi.com/2/paper/docs/list',
       {},
       this.baseHeaders,
       { data: { doc_ids: docIds }, has_more: false }
     )
 
-    docIds = await getDocIds(response, docIds, this.baseHeaders)
+    docIds = await this._getDocIds(response, docIds, this.baseHeaders)
 
     return docIds
   }
@@ -73,7 +107,7 @@ module.exports = class {
   async getContent(docID) {
     let content
 
-    content = await post(
+    content = await this.httpPoster.post(
       'https://api.dropboxapi.com/2/paper/docs/download',
       null,
       Object.assign({}, this.baseHeaders, {
@@ -94,7 +128,7 @@ module.exports = class {
   async getMeta(docID) {
     let meta
 
-    meta = await post(
+    meta = await this.httpPoster.post(
       'https://api.dropboxapi.com/2/paper/docs/get_metadata',
       { doc_id: docID },
       this.baseHeaders,

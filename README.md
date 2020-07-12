@@ -36,6 +36,7 @@ plugins: [
         options: {
             access_token: "your-access-token",
             format: "html"
+        }
     },
 },
 ```
@@ -99,11 +100,30 @@ Using the [gatsby-transformer-remark](https://www.gatsbyjs.org/packages/gatsby-t
 }
 ```
 
+### Configuring Retries On Failure
+
+The Dropbox Paper API is not always responsive when requesting a document's metadata or the HTML and markdown. This plugin now supports configurable retrying with a modifiable delay:
+
+```js
+plugins: [
+    {
+        resolve: "gatsby-source-dropbox-paper",
+        options: {
+            access_token: "your-access-token",
+            format: "html",
+            maxRetryCount: 3, //defaults to 5 retries per API request
+            retryDelayMs: 100, //defaults to 0
+            shouldRetry: true //defaults to false, needs to be true for the prior two options to work
+        }
+    },
+},
+```
+
 ## The Future
 
 Right now, this plugin pulls _all_ documents from an authenticated account, which is less than ideal. Improvements will come with changes to this plugin, as well as the evolution of the [Dropbox API](https://www.dropbox.com/developers), which has limited capabilities in terms of filtering documents to be pulled. Here's what I'd like to see in the future:
 
-- The ability pull documents by status.
+- The ability to pull documents by status.
 - The ability to pull documents by specific directory.
 - Other stuff.
 
