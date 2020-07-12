@@ -1,18 +1,24 @@
 const DocumentManager = require('./DocumentManager')
 
 exports.sourceNodes = async (
-  { actions, cache, createContentDigest },
+  { actions, cache, createContentDigest, reporter },
   configOptions
 ) => {
   const { createNode, touchNode } = actions
   delete configOptions.plugins
   const format = configOptions.format ? configOptions.format : 'markdown'
+  const {
+    maxRetryCount = 4,
+    retryDelayMs = 0,
+    shouldRetry = false,
+  } = configOptions
   const documentManager = new DocumentManager(
     configOptions.access_token,
-    format
+    format,
+    { maxRetryCount, retryDelayMs, shouldRetry }
   )
 
-  console.log('\nPulling data from Dropbox Paper...\n')
+  reporter.info('Pulling data from Dropbox Paper...')
 
   for (let id of await documentManager.getAll()) {
     let meta = await documentManager.getMeta(id)
@@ -59,7 +65,7 @@ exports.sourceNodes = async (
     }
   }
 
-  console.log(
-    '\nThanks for using the gatsby-source-dropbox-paper plugin. Help make it better by contributing here: https://github.com/alexmacarthur/gatsby-source-dropbox-paper\n'
+  reporter.info(
+    'Thanks for using the gatsby-source-dropbox-paper plugin. Help make it better by contributing here: \nhttps://github.com/alexmacarthur/gatsby-source-dropbox-paper'
   )
 }
